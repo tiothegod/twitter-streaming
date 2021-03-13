@@ -1,0 +1,3 @@
+*.txt
+checkpoint/*
+/project/target/*
