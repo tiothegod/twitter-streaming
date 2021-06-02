@@ -14,5 +14,11 @@ libraryDependencies ++= Seq(
   "org.twitter4j" % "twitter4j-stream" % "3.0.3",
   "com.typesafe" % "config" % "1.2.0",
   "org.apache.kafka" %% "kafka" % "2.4.1",
-  "net.liftweb" %% "lift-json" % "2.6.2"
+  "net.liftweb" %% "lift-json" % "2.6.2",
+  "org.apache.spark" %% "spark-sql-kafka-0-10" % "2.4.1" ,
+  "com.typesafe.akka" %% "akka-actor" % "2.3.8",
+  "org.apache.spark" % "spark-streaming_2.11" % "2.2.0",
+  "com.datastax.spark" %% "spark-cassandra-connector" % "2.4.2",
+  "org.apache.spark" %% "spark-streaming-kafka-0-10" % "2.4.4"
+
 )
