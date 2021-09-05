@@ -2,13 +2,14 @@ package speed_layer
 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types.{LongType, StringType, StructField, StructType}
-import org.apache.spark.sql.functions.{col, current_timestamp, desc, from_json, lower, sum, window}
+import org.apache.spark.sql.functions.{col, current_timestamp, desc, from_json, lower, sum, to_utc_timestamp, window}
 import org.apache.spark.sql.streaming.{OutputMode, StreamingQuery}
 import main_package.AppConfiguration
 import akka.actor.{Actor, ActorSystem, Props}
 import com.datastax.spark.connector.cql.CassandraConnector
 import org.apache.spark.sql.cassandra._
 
+import java.util.Calendar
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 
@@ -37,7 +38,7 @@ class RealtimeProcessingSpark {
 
   def restartQuery(): Unit = {
 //     Remove all existing data from hashtag_realtimeview table
-//        connector.withSessionDo(session => session.execute("TRUNCATE lambda_architecture.hashtag_realtimeview"))
+        connector.withSessionDo(session => session.execute("TRUNCATE lambda_architecture.hashtag_realtimeview"))
 
     if (activeQuery == null) {
       activeQuery = realtimeAnalysis()
@@ -63,27 +64,22 @@ class RealtimeProcessingSpark {
       .flatMap(_.split(","))
       .filter($"value".notEqual(""))
     val hashtagCount = splitedHashtag
-      .withWatermark("time", "20000 milliseconds")
-      .groupBy(window($"time", "10 seconds"), col("value"))
-      .agg(sum("value").as("count"))
+      .groupBy("value")
+      .count()
       .sort(desc("count"))
       .withColumnRenamed("value", "hashtag")
-    val query = hashtagCount
-      .writeStream
-      .format("console")
-      .option("truncate", "false")
-      .outputMode(OutputMode.Append()).start()
-//    val query = hashtagCount.writeStream.foreachBatch { (batchDF, batchId) =>
-//      batchDF.persist()
-//      batchDF.write.format("org.apache.spark.sql.cassandra")
-//        .mode("append")
-//        .options(
-//          Map("table" -> "hashtag_realtimeview",
-//            "keyspace" -> "lambda_architecture",
-//            "spark.cassandra.connection.host"-> "127.0.0.1",
-//            "spark.cassandra.connection.port" -> "9042"
-//          )).save()
-//    }.start()
+    val query = hashtagCount.writeStream.foreachBatch { (batchDF, batchId) =>
+      batchDF.persist()
+      batchDF.show()
+      batchDF.write.format("org.apache.spark.sql.cassandra")
+        .mode("Append")
+        .options(
+          Map("table" -> "hashtag_realtimeview",
+            "keyspace" -> "lambda_architecture",
+            "spark.cassandra.connection.host"-> "127.0.0.1",
+            "spark.cassandra.connection.port" -> "9042"
+          )).save()
+    }.outputMode("complete").start()
     query
   }
 
