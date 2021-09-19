@@ -4,6 +4,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import twitter4j.conf.Configuration
 
 import java.util.Properties
+import java.util.concurrent.TimeUnit
 import scala.collection.JavaConversions._
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
@@ -24,7 +25,7 @@ object AppConfiguration {
 
   val kafkaTopic: String = config.getString("kafka.topic")
 
-  def getKafkaProp(): Properties = {
+  def getKafkaProp: Properties = {
     val props = new Properties()
     props.put("bootstrap.servers", "localhost:9092".asInstanceOf[AnyRef])
     props.put("acks", "all".asInstanceOf[AnyRef])
@@ -36,11 +37,10 @@ object AppConfiguration {
     props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer")
     props
   }
+  val tweetDuration: FiniteDuration =Duration.fromNanos(config.getDuration("batchProcessing.tweetDuration",
+                                                        TimeUnit.NANOSECONDS))
+  val batchInterval: FiniteDuration =Duration.fromNanos(config.getDuration("batchProcessing.batchInterval",
+                                                        TimeUnit.NANOSECONDS))
 
-
-  // Batch processing config
-  // Convert Duration to Finite Duration
-  //    val tweetDuration: FiniteDuration =Duration.fromNanos(config.getDuration("batchProcessing.tweetDuration").toNanos)
-  //    val batchInterval: FiniteDuration =Duration.fromNanos(config.getDuration("batchProcessing.batchInterval").toNanos)
 
 }
